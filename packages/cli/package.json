@@ -1,5 +1,5 @@
 {
-  "name": "@template/cli",
+  "name": "@rsp-app/cli",
   "version": "0.0.0",
   "type": "module",
   "license": "MIT",
@@ -28,14 +28,14 @@
     "@effect/cli": "latest",
     "@effect/platform": "latest",
     "@effect/platform-node": "latest",
-    "@template/domain": "workspace:^",
+    "@rsp-app/domain": "workspace:^",
     "effect": "latest"
   },
   "devDependencies": {
     "@effect/cli": "latest",
     "@effect/platform": "latest",
     "@effect/platform-node": "latest",
-    "@template/domain": "workspace:^",
+    "@rsp-app/domain": "workspace:^",
     "effect": "latest"
   },
   "effect": {

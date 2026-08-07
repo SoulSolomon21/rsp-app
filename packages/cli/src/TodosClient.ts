@@ -1,6 +1,6 @@
 import { HttpApiClient } from "@effect/platform"
-import type { TodoId } from "@template/domain/TodosApi"
-import { TodosApi } from "@template/domain/TodosApi"
+import type { TodoId } from "@rsp-app/domain/TodosApi"
+import { TodosApi } from "@rsp-app/domain/TodosApi"
 import { Effect } from "effect"
 
 export class TodosClient extends Effect.Service<TodosClient>()("cli/TodosClient", {

@@ -1,5 +1,5 @@
 import { HttpApiBuilder } from "@effect/platform"
-import { TodosApi } from "@template/domain/TodosApi"
+import { TodosApi } from "@rsp-app/domain/TodosApi"
 import { Effect, Layer } from "effect"
 import { TodosRepository } from "./TodosRepository.js"
 

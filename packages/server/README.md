@@ -1,6 +1,6 @@
 # Effect Monorepo Template - Server Package
 
-Run the `dev` script in `@template/server` package to start the server
+Run the `dev` script in `@rsp-app/server` package to start the server
 
 The server will start on `http://localhost:3000` by default.
 

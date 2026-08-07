@@ -1,5 +1,5 @@
 {
-  "name": "@template/server",
+  "name": "@rsp-app/server",
   "version": "0.0.0",
   "type": "module",
   "license": "MIT",
@@ -26,7 +26,7 @@
   "dependencies": {
     "@effect/platform": "latest",
     "@effect/platform-node": "latest",
-    "@template/domain": "workspace:^",
+    "@rsp-app/domain": "workspace:^",
     "effect": "latest"
   },
   "effect": {
