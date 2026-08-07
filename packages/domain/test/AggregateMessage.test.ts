@@ -48,4 +48,13 @@ describe("AggregateMessage", () => {
     expect(Option.isSome(messageKind)).toBe(true)
     expect(messageKind).toEqual(Option.some("Event"))
   })
+
+  it("Command - by default, the aggregate root should be filled", () => {
+    const message = ChangeProductName.make({
+      newName: "New Product",
+      _id: "message-id",
+      _aggregateId: "product-abc"
+    })
+    expect(message._aggregateRoot).toEqual(ProductAggregate.aggregateRootName)
+  })
 })

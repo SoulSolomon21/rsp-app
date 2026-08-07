@@ -43,7 +43,7 @@ export function AggregateRoot<AggregateRootName extends string>(
       basicPayload: Payload
     ) => ({
       ...basicPayload,
-      _id: Schema.UUID.pipe(AggregateMessage.withAggregateMessageKindAnnotation(messageKind)),
+      _id: Schema.NonEmptyString.pipe(AggregateMessage.withAggregateMessageKindAnnotation(messageKind)),
       _aggregateRoot: Schema.tag(args.aggregateRootName),
       _aggregateId: Schema.NonEmptyString,
       _causationId: Schema.optionalWith(Schema.Option(Schema.UUID), { default: () => Option.none<string>() }),
