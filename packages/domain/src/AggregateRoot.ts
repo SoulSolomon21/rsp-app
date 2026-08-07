@@ -1,4 +1,4 @@
-import { Schema } from "effect"
+import { Option, Schema } from "effect"
 import * as AggregateMessage from "./AggregateMessage.js"
 
 const AggregateRootTypeId = Symbol.for("@@AggregateRoot")
@@ -26,6 +26,12 @@ type AggregateRootMetadataFields<AggregateRootName extends string> = {
   _id: typeof Schema.UUID
   _aggregateRoot: Schema.tag<AggregateRootName>
   _aggregateId: typeof Schema.NonEmptyString
+  _causationId: Schema.optionalWith<Schema.Option<typeof Schema.UUID>, {
+    default: () => Option.Option<string>
+  }>
+  _correlationId: Schema.optionalWith<Schema.Option<typeof Schema.UUID>, {
+    default: () => Option.Option<string>
+  }>
 }
 
 export function AggregateRoot<AggregateRootName extends string>(
@@ -40,8 +46,8 @@ export function AggregateRoot<AggregateRootName extends string>(
       _id: Schema.UUID.pipe(AggregateMessage.withAggregateMessageKindAnnotation(messageKind)),
       _aggregateRoot: Schema.tag(args.aggregateRootName),
       _aggregateId: Schema.NonEmptyString,
-      _causationId: Schema.Option(Schema.UUID),
-      _correlationId: Schema.Option(Schema.UUID)
+      _causationId: Schema.optionalWith(Schema.Option(Schema.UUID), { default: () => Option.none<string>() }),
+      _correlationId: Schema.optionalWith(Schema.Option(Schema.UUID), { default: () => Option.none<string>() })
     })
 
   return {
