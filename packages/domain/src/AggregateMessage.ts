@@ -1,4 +1,13 @@
 import { Option, Schema, SchemaAST } from "effect"
+import type { AggregateRoot } from "./AggregateRoot.js"
+
+export namespace AggregateMessage {
+  export type AnyForAggregate<A extends AggregateRoot.All> = {
+    Type: {
+      _aggregateRoot: AggregateRoot.Name<A>
+    }
+  }
+}
 
 export const AggregateMessageAnnotationTypeId = Symbol.for("@@AggregateMessageAnnotationTypeId")
 

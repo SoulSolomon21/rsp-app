@@ -18,6 +18,11 @@ export interface AggregateRoot<AggregateRootName extends string> {
   Event: AggregateMessageConstructor<AggregateRootName>
 }
 
+export namespace AggregateRoot {
+  export type All = AggregateRoot<string>
+  export type Name<A extends All> = [A] extends [AggregateRoot<infer Name>] ? Name : never
+}
+
 export interface AggregateRootArgs<AggregateRootName extends string> {
   aggregateRootName: AggregateRootName
 }
