@@ -4,7 +4,7 @@ import { Option, SchemaAST } from "effect"
 export const AggregateMessageAnnotationTypeId = Symbol.for("@@AggregateMessageAnnotationTypeId")
 
 export namespace MessageKind {
-  export type All = AggregateMessageKind
+  export type All = any
 }
 
 export type AggregateMessageKind = "Query" | "Command" | "Event"
