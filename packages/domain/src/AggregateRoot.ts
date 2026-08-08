@@ -1,5 +1,5 @@
 import { Option, Schema } from "effect"
-import * as AggregateMessage from "./AggregateMessage.js"
+import * as Message from "./Message.js"
 
 const AggregateRootTypeId = Symbol.for("@@AggregateRoot")
 export type AggregateRootTypeId = typeof AggregateRootTypeId
@@ -43,12 +43,12 @@ export function AggregateRoot<AggregateRootName extends string>(
   args: AggregateRootArgs<AggregateRootName>
 ): AggregateRoot<AggregateRootName> {
   const attachMetadataPayloadFields =
-    (messageKind: AggregateMessage.AggregateMessageKind) =>
+    (messageKind: Message.AggregateMessageKind) =>
     <Payload extends Schema.Struct.Fields>(
       basicPayload: Payload
     ) => ({
       ...basicPayload,
-      _id: Schema.NonEmptyString.pipe(AggregateMessage.withAggregateMessageKindAnnotation(messageKind)),
+      _id: Schema.NonEmptyString.pipe(Message.withAggregateMessageKindAnnotation(messageKind)),
       _aggregateRoot: Schema.tag(args.aggregateRootName),
       _aggregateId: Schema.NonEmptyString,
       _causationId: Schema.optionalWith(Schema.Option(Schema.UUID), { default: () => Option.none<string>() }),

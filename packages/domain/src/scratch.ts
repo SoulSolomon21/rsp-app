@@ -1,6 +1,6 @@
 import { Effect, Schema } from "effect"
-import type { AggregateMessage } from "./AggregateMessage.js"
 import * as AggregateRoot from "./AggregateRoot.js"
+import type { Message } from "./Message.js"
 
 const ProductAggregate = AggregateRoot.AggregateRoot({
   aggregateRootName: "products"
@@ -49,7 +49,7 @@ interface EventJournal<A extends AggregateRoot.AggregateRoot<string>, Events> {
 }
 
 function makeEventSourcedAggregate<A extends AggregateRoot.AggregateRoot<string>>(aggregateRoot: A) {
-  return <Events extends ReadonlyArray<AggregateMessage.AnyForAggregate<A>>>(...events: Events) =>
+  return <Events extends ReadonlyArray<Message.AnyForAggregate<A>>>(...events: Events) =>
   <R>(
     updateAggregateState: (event: Schema.Schema.Type<Events[number]>) => Effect.Effect<void, never, R>
   ): EventJournal<A, Schema.Schema.Type<Events[number]>> => {}

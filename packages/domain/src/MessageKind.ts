@@ -1,26 +1,15 @@
-import { Option, Schema, SchemaAST } from "effect"
-import type { AggregateRoot } from "./AggregateRoot.js"
-
-export namespace AggregateMessage {
-  export type AnyForAggregate<A extends AggregateRoot.All> = {
-    Type: {
-      _aggregateRoot: AggregateRoot.Name<A>
-    }
-  }
-}
+import type { Schema } from "effect"
+import { Option, SchemaAST } from "effect"
 
 export const AggregateMessageAnnotationTypeId = Symbol.for("@@AggregateMessageAnnotationTypeId")
 
-export type AggregateMessageKind = "Query" | "Command" | "Event"
-
-export function withAggregateMessageKindAnnotation(messageKind: AggregateMessageKind) {
-  return <A extends Schema.Schema.All>(schema: A): A =>
-    Schema.annotations({
-      [AggregateMessageAnnotationTypeId]: messageKind
-    })(schema)
+export namespace MessageKind {
+  export type All = AggregateMessageKind
 }
 
-export function getAggregateMessageKind<A extends Schema.Schema.All>(schema: A) {
+export type AggregateMessageKind = "Query" | "Command" | "Event"
+
+export function getMessageKind<A extends Schema.Schema.All>(schema: A) {
   return getAggregateMessageKindFromAST(schema.ast)
 }
 

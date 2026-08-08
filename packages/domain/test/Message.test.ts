@@ -1,26 +1,33 @@
 import { Option, Schema } from "effect"
-import * as AggregateMessage from "../src/AggregateMessage.js"
 import * as AggregateRoot from "../src/AggregateRoot.js"
+import * as MessageKind from "../src/MessageKind.js"
 
 import { describe, expect, it } from "@effect/vitest"
+import { MessageHeaders } from "../src/MessageHeaders.js"
 
 const ProductAggregate = AggregateRoot.AggregateRoot({
   aggregateRootName: "products"
 })
 
-export class ChangeProductName extends Schema.TaggedRequest<ChangeProductName>()("ChangeProductName", {
-  payload: ProductAggregate.Command({
-    newName: Schema.NonEmptyString
-  }),
-  success: Schema.Boolean,
-  failure: Schema.Boolean
-}) {}
+export class ChangeProductName extends Schema.TaggedRequest<ChangeProductName>()(
+  "ChangeProductNameWithSchema",
+  {
+    payload: ProductAggregate.Command({
+      newName: Schema.NonEmptyString
+    }),
+    success: Schema.Boolean,
+    failure: Schema.Boolean
+  }
+) {}
 
-export class ReadProductName extends Schema.TaggedRequest<ReadProductName>()("ReadProductName", {
-  payload: ProductAggregate.Query({}),
-  success: Schema.Boolean,
-  failure: Schema.Boolean
-}) {}
+export class ReadProductName extends Schema.TaggedRequest<ReadProductName>()(
+  "ReadProductName",
+  {
+    payload: ProductAggregate.Query({}),
+    success: Schema.Boolean,
+    failure: Schema.Boolean
+  }
+) {}
 
 export class ProductNameChanged extends Schema.TaggedClass<ProductNameChanged>()(
   "ProductNameChanged",
@@ -30,30 +37,31 @@ export class ProductNameChanged extends Schema.TaggedClass<ProductNameChanged>()
   })
 ) {}
 
-describe("AggregateMessage", () => {
+describe("Message", () => {
   it("Query - it should check the type of a message", () => {
-    const messageKind = AggregateMessage.getAggregateMessageKind(ReadProductName)
+    const messageKind = MessageKind.getMessageKind(ReadProductName)
     expect(Option.isSome(messageKind)).toBe(true)
     expect(messageKind).toEqual(Option.some("Query"))
   })
 
   it("Command - it should check the type of a message", () => {
-    const messageKind = AggregateMessage.getAggregateMessageKind(ChangeProductName)
+    const messageKind = MessageKind.getMessageKind(ChangeProductName)
     expect(Option.isSome(messageKind)).toBe(true)
     expect(messageKind).toEqual(Option.some("Command"))
   })
 
   it("Event - it should check the type of a message", () => {
-    const messageKind = AggregateMessage.getAggregateMessageKind(ProductNameChanged)
+    const messageKind = MessageKind.getMessageKind(ProductNameChanged)
     expect(Option.isSome(messageKind)).toBe(true)
     expect(messageKind).toEqual(Option.some("Event"))
   })
 
   it("Command - by default, the aggregate root should be filled", () => {
+    const _headers = MessageHeaders.make({ messageId: "aaa" })
     const message = ChangeProductName.make({
       newName: "New Product",
-      _id: "message-id",
-      _aggregateId: "product-abc"
+      _aggregateId: "product-abc",
+      ..._headers
     })
     expect(message._aggregateRoot).toEqual(ProductAggregate.aggregateRootName)
   })
