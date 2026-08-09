@@ -1,5 +1,6 @@
 import { Option, Schema } from "effect"
 import * as AggregateRoot from "../src/AggregateRoot.js"
+import * as Message from "../src/Message.js"
 import * as MessageKind from "../src/MessageKind.js"
 
 import { describe, expect, it } from "@effect/vitest"
@@ -61,8 +62,8 @@ describe("Message", () => {
     const message = ChangeProductName.make({
       newName: "New Product",
       _aggregateId: "product-abc",
-      ..._headers
+      _headers
     })
-    expect(message._aggregateRoot).toEqual(ProductAggregate.aggregateRootName)
+    expect(Message.getAggregateRootName(message)).toEqual(ProductAggregate.aggregateRootName)
   })
 })
