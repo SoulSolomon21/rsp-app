@@ -1,21 +1,17 @@
-import { Option, Schema } from "effect"
-import * as Message from "./Message.js"
+import { Schema } from "effect"
+import * as AggregateMessage from "./Message.js"
 
-const AggregateRootTypeId = Symbol.for("@@AggregateRoot")
+const AggregateRootTypeId = Symbol.for("@rsp-app/domain/AggregateRoot")
 export type AggregateRootTypeId = typeof AggregateRootTypeId
 
-interface AggregateMessageConstructor<AggregateRootName extends string> {
-  <Payload extends Schema.Struct.Fields>(
-    payload: Payload
-  ): Payload & AggregateRootMetadataFields<AggregateRootName>
-}
-
 export interface AggregateRoot<AggregateRootName extends string> {
+  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
+  new(_: never): {}
   [AggregateRootTypeId]: AggregateRootTypeId
   aggregateRootName: AggregateRootName
-  Query: AggregateMessageConstructor<AggregateRootName>
-  Command: AggregateMessageConstructor<AggregateRootName>
-  Event: AggregateMessageConstructor<AggregateRootName>
+  Query: AggregateMessage.PayloadConstructor<AggregateRootName, Schema.Literal<["Query"]>>
+  Command: AggregateMessage.PayloadConstructor<AggregateRootName, Schema.Literal<["Command"]>>
+  Event: AggregateMessage.PayloadConstructor<AggregateRootName, Schema.Literal<["Event"]>>
 }
 
 export namespace AggregateRoot {
@@ -27,39 +23,14 @@ export interface AggregateRootArgs<AggregateRootName extends string> {
   aggregateRootName: AggregateRootName
 }
 
-type AggregateRootMetadataFields<AggregateRootName extends string> = {
-  _id: typeof Schema.UUID
-  _aggregateRoot: Schema.tag<AggregateRootName>
-  _aggregateId: typeof Schema.NonEmptyString
-  _causationId: Schema.optionalWith<Schema.Option<typeof Schema.UUID>, {
-    default: () => Option.Option<string>
-  }>
-  _correlationId: Schema.optionalWith<Schema.Option<typeof Schema.UUID>, {
-    default: () => Option.Option<string>
-  }>
-}
-
 export function AggregateRoot<AggregateRootName extends string>(
   args: AggregateRootArgs<AggregateRootName>
 ): AggregateRoot<AggregateRootName> {
-  const attachMetadataPayloadFields =
-    (messageKind: Message.AggregateMessageKind) =>
-    <Payload extends Schema.Struct.Fields>(
-      basicPayload: Payload
-    ) => ({
-      ...basicPayload,
-      _id: Schema.NonEmptyString.pipe(Message.withAggregateMessageKindAnnotation(messageKind)),
-      _aggregateRoot: Schema.tag(args.aggregateRootName),
-      _aggregateId: Schema.NonEmptyString,
-      _causationId: Schema.optionalWith(Schema.Option(Schema.UUID), { default: () => Option.none<string>() }),
-      _correlationId: Schema.optionalWith(Schema.Option(Schema.UUID), { default: () => Option.none<string>() })
-    })
-
   return {
     [AggregateRootTypeId]: AggregateRootTypeId,
     aggregateRootName: args.aggregateRootName,
-    Query: attachMetadataPayloadFields("Query"),
-    Command: attachMetadataPayloadFields("Command"),
-    Event: attachMetadataPayloadFields("Event")
-  }
+    Query: AggregateMessage.makePayloadConstructor(args.aggregateRootName, Schema.Literal("Query")),
+    Command: AggregateMessage.makePayloadConstructor(args.aggregateRootName, Schema.Literal("Command")),
+    Event: AggregateMessage.makePayloadConstructor(args.aggregateRootName, Schema.Literal("Event"))
+  } as AggregateRoot<AggregateRootName>
 }

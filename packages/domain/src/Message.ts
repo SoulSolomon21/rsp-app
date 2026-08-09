@@ -1,8 +1,9 @@
 import * as Option from "effect/Option"
 import * as Schema from "effect/Schema"
+import * as AggregateId from "./AggregateId.js"
 import type * as AggregateRoot from "./AggregateRoot.js"
 import * as MessageHeaders from "./MessageHeaders.js"
-import type { MessageKind } from "./MessageKind.js"
+import type * as MessageKind from "./MessageKind.js"
 
 export const MessageAggregateRootNameAnnotationId: unique symbol = Symbol.for("@@MessageAggregateRootNameAnnotationId")
 export type MessageAggregateRootNameAnnotationId = typeof MessageAggregateRootNameAnnotationId
@@ -12,24 +13,26 @@ export type MessageKindAnnotationId = typeof MessageKindAnnotationId
 
 export type MessagePayload<
   AggregateRootName extends string,
-  MessageKind_ extends MessageKind.All
+  MessageKind_ extends MessageKind.MessageKind.All
 > = {
   [MessageAggregateRootNameAnnotationId]: OnlyOnType<Schema.Literal<[AggregateRootName]>>
   [MessageKindAnnotationId]: OnlyOnType<MessageKind_>
-  _aggregateId: typeof Schema.NonEmptyString
+  _aggregateId: typeof AggregateId.AggregateId$
   _headers: typeof MessageHeaders.MessageHeaders
 }
 
 export namespace Message {
-  export type All = Schema.Struct.Type<MessagePayload<string, MessageKind.All>>
+  export type All = Schema.Struct.Type<MessagePayload<string, MessageKind.MessageKind.All>>
   export type AnyForAggregate<A extends AggregateRoot.AggregateRoot.All> = {
-    Type: Schema.Struct.Type<MessagePayload<AggregateRoot.AggregateRoot.Name<A>, MessageKind.MessageKind>>
+    Type: {
+      [MessageAggregateRootNameAnnotationId]: AggregateRoot.AggregateRoot.Name<A>
+    }
   }
 }
 
 export interface PayloadConstructor<
   AggregateRootName extends string,
-  MessageKind extends MessageKind.All
+  MessageKind extends MessageKind.MessageKind.All
 > {
   <Payload extends Schema.Struct.Fields>(
     payload: Payload
@@ -52,7 +55,10 @@ type OnlyOnType<S extends Schema.Schema.AnyNoContext> = Schema.PropertySignature
   never
 >
 
-export const makePayloadConstructor = <AggregateRootName extends string, MessageKind extends MessageKind.All>(
+export const makePayloadConstructor = <
+  AggregateRootName extends string,
+  MessageKind extends MessageKind.MessageKind.All
+>(
   aggregateRootName: AggregateRootName,
   messageKind: MessageKind
 ): PayloadConstructor<AggregateRootName, MessageKind> =>
@@ -62,7 +68,7 @@ export const makePayloadConstructor = <AggregateRootName extends string, Message
   ...messagePayload,
   [MessageKindAnnotationId]: onlyOnType(messageKind)(messageKind.literals[0] as any),
   [MessageAggregateRootNameAnnotationId]: onlyOnType(Schema.Literal(aggregateRootName))(aggregateRootName),
-  _aggregateId: Schema.NonEmptyString,
+  _aggregateId: AggregateId.AggregateId$,
   _headers: MessageHeaders.MessageHeaders
 })
 
