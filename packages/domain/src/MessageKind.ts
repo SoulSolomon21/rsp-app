@@ -1,13 +1,19 @@
-import type { Schema } from "effect"
-import { Option, SchemaAST } from "effect"
+import { Option, Schema, SchemaAST } from "effect"
 
 export const AggregateMessageAnnotationTypeId = Symbol.for("@@AggregateMessageAnnotationTypeId")
 
 export namespace MessageKind {
-  export type All = any
+  export type All = Schema.Literal<any>
 }
 
 export type AggregateMessageKind = "Query" | "Command" | "Event"
+
+export function withAggregateMessageKindAnnotation(messageKind: AggregateMessageKind) {
+  return <A extends Schema.Schema.All>(schema: A): A =>
+    Schema.annotations({
+      [AggregateMessageAnnotationTypeId]: messageKind
+    })(schema)
+}
 
 export function getMessageKind<A extends Schema.Schema.All>(schema: A) {
   return getAggregateMessageKindFromAST(schema.ast)
