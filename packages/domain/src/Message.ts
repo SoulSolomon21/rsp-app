@@ -3,7 +3,7 @@ import * as Schema from "effect/Schema"
 import * as AggregateId from "./AggregateId.js"
 import type * as AggregateRoot from "./AggregateRoot.js"
 import * as MessageHeaders from "./MessageHeaders.js"
-import type * as MessageKind from "./MessageKind.js"
+import * as MessageKind from "./MessageKind.js"
 
 export const MessageAggregateRootNameAnnotationId: unique symbol = Symbol.for("@@MessageAggregateRootNameAnnotationId")
 export type MessageAggregateRootNameAnnotationId = typeof MessageAggregateRootNameAnnotationId
@@ -66,7 +66,11 @@ export const makePayloadConstructor = <
   messagePayload
 ) => ({
   ...messagePayload,
-  [MessageKindAnnotationId]: onlyOnType(messageKind)(messageKind.literals[0] as any),
+  [MessageKindAnnotationId]: onlyOnType(
+    messageKind.pipe(
+      MessageKind.withAggregateMessageKindAnnotation(messageKind.literals[0] as MessageKind.AggregateMessageKind)
+    )
+  )(messageKind.literals[0] as any),
   [MessageAggregateRootNameAnnotationId]: onlyOnType(Schema.Literal(aggregateRootName))(aggregateRootName),
   _aggregateId: AggregateId.AggregateId$,
   _headers: MessageHeaders.MessageHeaders
