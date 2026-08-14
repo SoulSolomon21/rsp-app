@@ -7,7 +7,7 @@ class SampleEvent1 extends Schema.TaggedClass<SampleEvent1>()("SampleEvent1", {}
 
 class SampleEvent2 extends Schema.TaggedClass<SampleEvent2>()("SampleEvent2", {}) {}
 
-const EventUnion = Schema.Union(SampleEvent1, SampleEvent2)
+const EventUnion = [SampleEvent1, SampleEvent2] as const
 
 describe("EventJournalStorage", () => {
   it.effect("Journal should persist then read events", () =>

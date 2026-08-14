@@ -4,27 +4,32 @@ import * as Ref from "effect/Ref"
 import type * as Schema from "effect/Schema"
 import type * as AggregateId from "./AggregateId.js"
 
+export interface EventJournalStorageEntry<Event> {
+  sequence: number
+  event: Event
+}
+
 export class EventJournalStorage extends Context.Tag("@@EventJournalStorage")<EventJournalStorage, {
   /**
    * This function allows to append new events into the journal.
    * We expect to receive the expected sequence number in order to check for race conditions
    */
-  append<Event>(
+  append<Events extends ReadonlyArray<Schema.Schema.All>>(
     aggregateRootName: string,
     aggregateId: AggregateId.AggregateId,
     expectedSequence: number,
-    schema: Schema.Schema<Event, any, never>,
-    event: Event
+    schema: Events,
+    event: Schema.Schema.Type<Events[number]>
   ): Effect.Effect<void>
   /**
    * This function returns a stream of the persisted events into the journal.
    */
-  read<EventSchema extends Schema.Schema.All>(
+  read<Events extends ReadonlyArray<Schema.Schema.All>>(
     aggregateRootName: string,
     aggregateId: AggregateId.AggregateId,
     fromSequence: number,
-    eventSchema: EventSchema
-  ): Stream.Stream<Schema.Schema.Type<EventSchema>>
+    eventSchema: Events
+  ): Stream.Stream<EventJournalStorageEntry<Schema.Schema.Type<Events[number]>>>
 }>() {}
 
 export const inMemory = Effect.gen(function*() {
@@ -63,6 +68,10 @@ export const inMemory = Effect.gen(function*() {
           Option.getOrElse(() => HashMap.empty<string, Array<any>>()),
           HashMap.get(aggregateId),
           Option.getOrElse(() => [] as Array<any>),
+          Array.map((event, sequence) => ({
+            event,
+            sequence
+          })),
           Stream.fromIterable
         )
       ),

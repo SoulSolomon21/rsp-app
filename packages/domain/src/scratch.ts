@@ -1,6 +1,6 @@
-import { Effect, Schema } from "effect"
+import { Option, pipe, Schema } from "effect"
 import * as AggregateRoot from "./AggregateRoot.js"
-import type { Message } from "./Message.js"
+import { make } from "./EventSourcedAggregate.js"
 
 export const ProductAggregate = AggregateRoot.AggregateRoot({
   aggregateRootName: "products"
@@ -44,24 +44,22 @@ export class MemberJoined extends Schema.TaggedClass<MemberJoined>()(
   MemberAggregate.Event({})
 ) {}
 
-function makeEventSourcedAggregate<A extends AggregateRoot.AggregateRoot<string>>(aggregateRoot: A) {
-  return <Events extends ReadonlyArray<Message.AnyForAggregate<A>>>(...events: Events) =>
-  <R>(
-    updateAggregateState: (event: Schema.Schema.Type<Events[number]>) => Effect.Effect<void, never, R>
-  ): EventJournal<A, Schema.Schema.Type<Events[number]>> => {}
-}
-
-const ProductEventJournal = makeEventSourcedAggregate(ProductAggregate)(ProductNameChanged, ProductDiscontinued)(
-  (event) => {
+const ProductEventJournal = make({
+  aggregateRoot: ProductAggregate,
+  eventTypes: [ProductNameChanged, ProductDiscontinued],
+  state: Schema.Option(Schema.String),
+  initialState: () => Option.none(),
+  reduce(state, { event }) {
     switch (event._tag) {
       case "ProductNameChanged":
-        return Effect.logInfo("Product name now is", event.newName)
+        return Option.some(event.newName)
       case "ProductDiscontinued":
-        return Effect.logInfo("Product discontinued. Reason: ", event.reason)
+        return Option.none()
     }
   }
-)
+})
 
-const A = ProductEventJournal.append(ProductNameChanged)
-
-const memberAggregateJournal = makeEventSourcedAggregate(MemberAggregate)(MemberJoined)
+ProductEventJournal.produce("product-1", ({ append, read }) =>
+  pipe(
+    append(new ProductNameChanged({}))
+  ))

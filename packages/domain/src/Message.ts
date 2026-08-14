@@ -24,10 +24,8 @@ export type MessagePayload<
 export namespace Message {
   export type All = Schema.Struct.Type<MessagePayload<string, MessageKind.MessageKind.All>>
   export type AnyForAggregate<A extends AggregateRoot.AggregateRoot.All> = {
-    Type: {
-      [MessageAggregateRootNameAnnotationId]: AggregateRoot.AggregateRoot.Name<A>
-    }
-  }
+    Type: Schema.Struct.Type<MessagePayload<AggregateRoot.AggregateRoot.Name<A>, MessageKind.MessageKind.All>>
+  } & Schema.Schema.AnyNoContext
 }
 
 export interface PayloadConstructor<
