@@ -1,13 +1,15 @@
 import { Array, Context, Effect, Layer, Option, pipe, Stream } from "effect"
+import * as Data from "effect/Data"
 import * as HashMap from "effect/HashMap"
 import * as Ref from "effect/Ref"
 import type * as Schema from "effect/Schema"
 import type * as AggregateId from "./AggregateId.js"
 
-export interface EventJournalStorageEntry<Event> {
-  sequence: number
-  event: Event
-}
+export class EventJournalStorageEntry<Event> extends Data.Class<{
+  readonly createdAt: Date
+  readonly sequence: number
+  readonly event: Event
+}> {}
 
 export class EventJournalStorage extends Context.Tag("@@EventJournalStorage")<EventJournalStorage, {
   /**
@@ -17,9 +19,8 @@ export class EventJournalStorage extends Context.Tag("@@EventJournalStorage")<Ev
   append<Events extends ReadonlyArray<Schema.Schema.All>>(
     aggregateRootName: string,
     aggregateId: AggregateId.AggregateId,
-    expectedSequence: number,
     schema: Events,
-    event: Schema.Schema.Type<Events[number]>
+    entry: EventJournalStorageEntry<Schema.Schema.Type<Events[number]>>
   ): Effect.Effect<void>
   /**
    * This function returns a stream of the persisted events into the journal.
@@ -39,7 +40,7 @@ export const inMemory = Effect.gen(function*() {
     HashMap.empty()
   )
 
-  const append: EventJournalStorage["Type"]["append"] = (aggregateRootName, aggregateId, expectedSequence, _, event) =>
+  const append: EventJournalStorage["Type"]["append"] = (aggregateRootName, aggregateId, _, entry) =>
     Ref.update(
       state,
       (oldState) =>
@@ -51,14 +52,14 @@ export const inMemory = Effect.gen(function*() {
               pipe(
                 maybeEventList,
                 Option.getOrElse(() => []),
-                Array.append(event),
+                Array.append(entry),
                 Option.some
               )),
             Option.some
           ))
     )
 
-  const read: EventJournalStorage["Type"]["read"] = (aggregateRootName, aggregateId, __, _) =>
+  const read: EventJournalStorage["Type"]["read"] = (aggregateRootName, aggregateId, fromSequence, _) =>
     pipe(
       Ref.get(state),
       Effect.map((stateValue) =>
@@ -68,10 +69,7 @@ export const inMemory = Effect.gen(function*() {
           Option.getOrElse(() => HashMap.empty<string, Array<any>>()),
           HashMap.get(aggregateId),
           Option.getOrElse(() => [] as Array<any>),
-          Array.map((event, sequence) => ({
-            event,
-            sequence
-          })),
+          Array.filter((entry: EventJournalStorageEntry<any>) => entry.sequence >= fromSequence),
           Stream.fromIterable
         )
       ),

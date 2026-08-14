@@ -14,7 +14,16 @@ describe("EventJournalStorage", () => {
     Effect.gen(function*() {
       const journal = yield* EventJournalStorage.EventJournalStorage
 
-      yield* journal.append("products", "product-1", 1, EventUnion, new SampleEvent1())
+      yield* journal.append(
+        "products",
+        "product-1",
+        EventUnion,
+        new EventJournalStorage.EventJournalStorageEntry({
+          createdAt: new Date(0),
+          sequence: 1,
+          event: new SampleEvent1()
+        })
+      )
       const events = yield* Stream.runCollect(journal.read("products", "product-1", 0, EventUnion))
 
       expect(Chunk.size(events)).toEqual(1)
@@ -24,7 +33,16 @@ describe("EventJournalStorage", () => {
     Effect.gen(function*() {
       const journal = yield* EventJournalStorage.EventJournalStorage
 
-      yield* journal.append("products", "product-1", 1, EventUnion, new SampleEvent1())
+      yield* journal.append(
+        "products",
+        "product-1",
+        EventUnion,
+        new EventJournalStorage.EventJournalStorageEntry({
+          createdAt: new Date(0),
+          sequence: 1,
+          event: new SampleEvent2()
+        })
+      )
       const events = yield* Stream.runCollect(journal.read("products", "product-2", 0, EventUnion))
 
       expect(Chunk.size(events)).toEqual(0)

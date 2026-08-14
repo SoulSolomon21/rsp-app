@@ -1,5 +1,6 @@
 import type { Schema } from "effect"
 import { Effect, pipe, Ref, Stream } from "effect"
+import * as Clock from "effect/Clock"
 import type * as AggregateId from "./AggregateId.js"
 import type * as AggregateRoot from "./AggregateRoot.js"
 import * as EventJournalStorage from "./EventJournalStorage.js"
@@ -74,8 +75,19 @@ export function make<
       const append = (event: Schema.Schema.Type<Events[number]>) =>
         Effect.gen(function*() {
           const sequence = yield* Ref.updateAndGet(sequenceRef, (n) => n + 1)
-          yield* journal.append(args.aggregateRoot.aggregateRootName, aggregateId, sequence, args.eventTypes, event)
-          yield* Ref.update(stateRef, (currentState) => args.reduce(currentState, { event, sequence }))
+          const createdAt = new Date(yield* Clock.currentTimeMillis)
+          const journalEntry = new EventJournalStorage.EventJournalStorageEntry({
+            event,
+            sequence,
+            createdAt
+          })
+          yield* journal.append(
+            args.aggregateRoot.aggregateRootName,
+            aggregateId,
+            args.eventTypes,
+            journalEntry
+          )
+          yield* Ref.update(stateRef, (currentState) => args.reduce(currentState, journalEntry))
         })
 
       yield* draft({ read, append })
