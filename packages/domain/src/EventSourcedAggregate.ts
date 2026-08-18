@@ -16,14 +16,16 @@ export interface EventSourcedAggregate<
 
 interface EventSourcedAggregateDraft<Events, State> {
   read: Effect.Effect<State>
-  append: (event: Events) => Effect.Effect<void>
+  append: (event: Events) => Effect.Effect<void, EventJournalStorage.EventJournalAppendEntryFailed>
 }
 
 interface EventSourcedAggregateProducer<Events, State> {
   (
     aggregateId: AggregateId.AggregateId,
-    fn: (draft: EventSourcedAggregateDraft<Events, State>) => Effect.Effect<void>
-  ): Effect.Effect<void, never, EventJournalStorage.EventJournalStorage>
+    fn: (
+      draft: EventSourcedAggregateDraft<Events, State>
+    ) => Effect.Effect<void, EventJournalStorage.EventJournalAppendEntryFailed>
+  ): Effect.Effect<void, EventJournalStorage.EventJournalAppendEntryFailed, EventJournalStorage.EventJournalStorage>
 }
 
 interface EventSourcedAggregateArgs<

@@ -1,8 +1,11 @@
-import { Array, Context, Effect, Layer, Option, pipe, Stream } from "effect"
+import type { SqlError } from "@effect/sql"
+import { SqlClient } from "@effect/sql"
+import { Array, Context, Effect, Layer, Option, pipe } from "effect"
 import * as Data from "effect/Data"
 import * as HashMap from "effect/HashMap"
 import * as Ref from "effect/Ref"
-import type * as Schema from "effect/Schema"
+import * as Schema from "effect/Schema"
+import * as Stream from "effect/Stream"
 import type * as AggregateId from "./AggregateId.js"
 
 export class EventJournalStorageEntry<Event> extends Data.Class<{
@@ -11,21 +14,25 @@ export class EventJournalStorageEntry<Event> extends Data.Class<{
   readonly event: Event
 }> {}
 
+export class EventJournalAppendEntryFailed extends Data.TaggedError("EventJournalAppendEntryFailed")<{
+  sequence: number
+}> {}
+
 export class EventJournalStorage extends Context.Tag("@@EventJournalStorage")<EventJournalStorage, {
   /**
    * This function allows to append new events into the journal.
    * We expect to receive the expected sequence number in order to check for race conditions
    */
-  append<Events extends ReadonlyArray<Schema.Schema.All>>(
+  append<Events extends ReadonlyArray<Schema.Schema.AnyNoContext>>(
     aggregateRootName: string,
     aggregateId: AggregateId.AggregateId,
     schema: Events,
     entry: EventJournalStorageEntry<Schema.Schema.Type<Events[number]>>
-  ): Effect.Effect<void>
+  ): Effect.Effect<void, EventJournalAppendEntryFailed>
   /**
    * This function returns a stream of the persisted events into the journal.
    */
-  read<Events extends ReadonlyArray<Schema.Schema.All>>(
+  read<Events extends ReadonlyArray<Schema.Schema.AnyNoContext>>(
     aggregateRootName: string,
     aggregateId: AggregateId.AggregateId,
     fromSequence: number,
@@ -40,7 +47,7 @@ export const inMemory = Effect.gen(function*() {
     HashMap.empty()
   )
 
-  const append: EventJournalStorage["Type"]["append"] = (aggregateRootName, aggregateId, _, entry) =>
+  const append: EventJournalStorage["Type"]["append"] = (aggregateRootName, aggregateId, _, journalEntry) =>
     Ref.update(
       state,
       (oldState) =>
@@ -52,7 +59,7 @@ export const inMemory = Effect.gen(function*() {
               pipe(
                 maybeEventList,
                 Option.getOrElse(() => []),
-                Array.append(entry),
+                Array.append(journalEntry),
                 Option.some
               )),
             Option.some
@@ -74,6 +81,49 @@ export const inMemory = Effect.gen(function*() {
         )
       ),
       Stream.unwrap
+    )
+
+  return { append, read }
+}).pipe(Layer.effect(EventJournalStorage))
+
+function makeEventUnionSchema<Events extends ReadonlyArray<Schema.Schema.AnyNoContext>>(
+  events: Events
+): Schema.Schema<Schema.Schema.Type<Events[number]>, Schema.Schema.Encoded<Events[number]>, never> {
+  return Schema.Union<Events>(...events) as any
+}
+
+interface EventJournalSqlliteRow {
+  aggregate_root: string
+  aggregate_id: string
+  sequence: number
+  event_payload: string
+}
+
+export const sqlLite = Effect.gen(function*() {
+  const sql = yield* SqlClient.SqlClient
+  yield* sql`CREATE TABLE event_journal (aggregate_root TEXT, aggregate_id TEXT, sequence INT, event_payload TEXT)`
+
+  const append: EventJournalStorage["Type"]["append"] = (aggregateRootName, aggregateId, schemas, journalEntry) =>
+    Effect.gen(function*() {
+      const event_payload = yield* Schema.encode(Schema.parseJson(makeEventUnionSchema(schemas)))(journalEntry.event)
+
+      yield* sql`INSERT INTO event_journal(aggregate_root, aggregate_id, sequence, event_payload) VALUES (${aggregateRootName}, ${aggregateId}, ${journalEntry.sequence}, ${event_payload});`
+    }).pipe(
+      Effect.catchAll((_) => new EventJournalAppendEntryFailed({ sequence: journalEntry.sequence }))
+    )
+
+  const read: EventJournalStorage["Type"]["read"] = (aggregateRootName, aggregateId, _, schemas) =>
+    Effect.gen(function*() {
+      const raw_data =
+        yield* sql`SELECT * FROM event_journal WHERE aggregate_root = ${aggregateRootName} AND aggregate_id = ${aggregateId} ORDER BY sequence ASC`
+          .raw as Effect.Effect<Array<EventJournalSqlliteRow>, SqlError.SqlError>
+
+      return Stream.fromIterable(raw_data).pipe(
+        Stream.mapEffect((row) => Schema.decode(Schema.parseJson(makeEventUnionSchema(schemas)))(row.event_payload))
+      )
+    }).pipe(
+      Stream.unwrap,
+      Stream.orDie
     )
 
   return { append, read }
