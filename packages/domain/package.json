@@ -26,6 +26,7 @@
   "dependencies": {
     "@effect/platform": "latest",
     "@effect/sql": "latest",
+    "@effect/sql-sqlite-node": "latest",
     "effect": "latest"
   },
   "effect": {
