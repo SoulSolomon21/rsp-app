@@ -59,7 +59,8 @@ const ProductEventJournal = make({
   }
 })
 
-ProductEventJournal.produce("product-1", ({ append, read }) =>
-  pipe(
-    append(new ProductNameChanged({}))
-  ))
+const A = ProductEventJournal.produce("product-1")
+
+  /////////////////////////
+
+

@@ -156,15 +156,23 @@ export const sqlLite = (args: EventJournalSqlliteMakeArgs) =>
           Schema.parseJson(makeEventUnionSchema(schemas)),
         )(journalEntry.event);
 
-        yield* sql`INSERT INTO ${sql.literal(args.journalTableName)}(aggregate_root, aggregate_id, sequence, event_payload) VALUES (${aggregateRootName}, ${aggregateId}, ${journalEntry.sequence}, ${event_payload});`;
-      }).pipe(
-        Effect.catchTag(
-          'SqlError',
-          (_) =>
-            new EventJournalAppendEntryFailed({
+        const {changes} = yield* sql`INSERT INTO ${sql.literal(args.journalTableName)} 
+        (aggregate_root, aggregate_id, sequence, event_payload) 
+        SELECT ${aggregateRootName}, ${aggregateId}, ${journalEntry.sequence}, ${event_payload}
+        WHERE NOT EXISTS (
+          SELECT 1 FROM ${sql.literal(args.journalTableName)} 
+          WHERE 
+            aggregate_root = ${aggregateRootName} 
+            AND aggregate_id = ${aggregateId} 
+            AND sequence >= ${journalEntry.sequence}
+        )`.raw as Effect.Effect<{changes: number}, SqlError.SqlError>;
+
+        if (changes === 0) {
+          yield* Effect.fail(new EventJournalAppendEntryFailed({
               sequence: journalEntry.sequence,
-            }),
-        ),
+            }))
+        }
+      }).pipe(
         Effect.orDie,
       );
 
