@@ -5,9 +5,7 @@
     "exactOptionalPropertyTypes": true,
     "moduleDetection": "force",
     "composite": true,
-    "downlevelIteration": true,
     "resolveJsonModule": true,
-    "esModuleInterop": false,
     "declaration": true,
     "skipLibCheck": true,
     "emitDecoratorMetadata": true,
@@ -35,7 +33,6 @@
     "noImplicitThis": true,
     "noUncheckedIndexedAccess": false,
     "strictNullChecks": true,
-    "baseUrl": ".",
     "target": "ES2022",
     "module": "NodeNext",
     "incremental": true,
@@ -43,7 +40,9 @@
     "plugins": [
       {
         "name": "@effect/language-service",
-        "namespaceImportPackages": ["effect"]
+        "namespaceImportPackages": [
+          "effect"
+        ]
       }
     ],
     "paths": {

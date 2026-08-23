@@ -1,7 +1,5 @@
 {
-  "typescript.tsdk": "node_modules/typescript/lib",
-  "typescript.preferences.importModuleSpecifier": "relative",
-  "typescript.enablePromptUseWorkspaceTsdk": true,
+  "js/ts.preferences.importModuleSpecifier": "relative",
   "editor.formatOnSave": true,
   "eslint.format.enable": true,
   "[json]": {
