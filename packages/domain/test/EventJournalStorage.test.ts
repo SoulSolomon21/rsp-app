@@ -1,4 +1,4 @@
-import { Chunk, Effect, Schema, Stream } from 'effect';
+import { Cause, Chunk, Effect, Exit, Option, Schema, Stream,Layer } from 'effect';
 import * as EventJournalStorage from '../src/EventJournalStorage.js';
 import * as SqlliteClientNode from '@effect/sql-sqlite-node';
 
@@ -85,11 +85,55 @@ describe('EventJournalStorage', () => {
       expect(Chunk.size(events)).toEqual(1);
     }).pipe(
       Effect.provide(
-        EventJournalStorage.sqlLite({ journalTableName: 'event_journal' }),
-      ),
+        Layer
+          .mergeAll(EventJournalStorage.sqlLite({ journalTableName: 'event_journal' }))
+          .pipe(
+            Layer.provideMerge(SqlliteClientNode.SqliteClient.layer({ filename: 'test.db' }))
+          )
+        ),
+    ),
+  );
+
+  it.effect('fails sqllite append if already exists', () =>
+    Effect.gen(function* () {
+      const sql = yield* SqlClient.SqlClient;
+      yield* sql`DELETE FROM event_journal_fail`;
+      const journal = yield* EventJournalStorage.EventJournalStorage;
+
+      yield* journal.append(
+        'products',
+        'product-1',
+        EventUnion,
+        new EventJournalStorage.EventJournalStorageEntry({
+          createdAt: new Date(0),
+          sequence: 1,
+          event: new SampleEvent1(),
+        }),
+      );
+
+      const appendResult = yield* journal.append(
+        'products',
+        'product-1',
+        EventUnion,
+        new EventJournalStorage.EventJournalStorageEntry({
+          createdAt: new Date(0),
+          sequence: 1,
+          event: new SampleEvent1(),
+        }),
+      ).pipe(Effect.exit);
+
+      expect(Exit.isFailure(appendResult)).toEqual(true);
+      if(appendResult._tag === "Failure") {
+        expect(Option.isSome(Cause.failureOption(appendResult.cause))).toEqual(true)
+      }
+    }).pipe(
       Effect.provide(
-        SqlliteClientNode.SqliteClient.layer({ filename: 'test.db' }),
-      ),
+        Layer
+          .mergeAll(EventJournalStorage.sqlLite({ journalTableName: 'event_journal_fail' }))
+          .pipe(
+            Layer.provideMerge(SqlliteClientNode.SqliteClient.layer({ filename: 'test.db' }))
+          )
+        ),
     ),
   );
 });

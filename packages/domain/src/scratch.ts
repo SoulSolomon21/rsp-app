@@ -1,4 +1,4 @@
-import { Option, pipe, Schema } from "effect"
+import { Option, Schema } from "effect"
 import * as AggregateRoot from "./AggregateRoot.js"
 import { make } from "./EventSourcedAggregate.js"
 

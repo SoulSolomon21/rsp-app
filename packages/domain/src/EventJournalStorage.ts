@@ -12,13 +12,13 @@ export class EventJournalStorageEntry<Event> extends Data.Class<{
   readonly createdAt: Date;
   readonly sequence: number;
   readonly event: Event;
-}> {}
+}> { }
 
 export class EventJournalAppendEntryFailed extends Data.TaggedError(
   'EventJournalAppendEntryFailed',
 )<{
   sequence: number;
-}> {}
+}> { }
 
 export class EventJournalStorage extends Context.Tag('@@EventJournalStorage')<
   EventJournalStorage,
@@ -45,7 +45,7 @@ export class EventJournalStorage extends Context.Tag('@@EventJournalStorage')<
       EventJournalStorageEntry<Schema.Schema.Type<Events[number]>>
     >;
   }
->() {}
+>() { }
 
 export const inMemory = Effect.gen(function* () {
   const state = yield* Ref.make<
@@ -156,7 +156,7 @@ export const sqlLite = (args: EventJournalSqlliteMakeArgs) =>
           Schema.parseJson(makeEventUnionSchema(schemas)),
         )(journalEntry.event);
 
-        const {changes} = yield* sql`INSERT INTO ${sql.literal(args.journalTableName)} 
+        const { changes } = yield* sql`INSERT INTO ${sql.literal(args.journalTableName)} 
         (aggregate_root, aggregate_id, sequence, event_payload) 
         SELECT ${aggregateRootName}, ${aggregateId}, ${journalEntry.sequence}, ${event_payload}
         WHERE NOT EXISTS (
@@ -165,15 +165,16 @@ export const sqlLite = (args: EventJournalSqlliteMakeArgs) =>
             aggregate_root = ${aggregateRootName} 
             AND aggregate_id = ${aggregateId} 
             AND sequence >= ${journalEntry.sequence}
-        )`.raw as Effect.Effect<{changes: number}, SqlError.SqlError>;
+        )`.raw as Effect.Effect<{ changes: number }, SqlError.SqlError>;
 
-        if (changes === 0) {
-          yield* Effect.fail(new EventJournalAppendEntryFailed({
-              sequence: journalEntry.sequence,
-            }))
-        }
+        return changes
       }).pipe(
         Effect.orDie,
+        Effect.flatMap((changes) =>
+          changes === 0 
+            ? Effect.fail(new EventJournalAppendEntryFailed({ sequence: journalEntry.sequence })) 
+            : Effect.void
+        )
       );
 
     const read: EventJournalStorage['Type']['read'] = (
@@ -186,9 +187,9 @@ export const sqlLite = (args: EventJournalSqlliteMakeArgs) =>
         const raw_data =
           yield* sql`SELECT * FROM ${sql.literal(args.journalTableName)} WHERE aggregate_root = ${aggregateRootName} AND aggregate_id = ${aggregateId} ORDER BY sequence ASC`
             .raw as Effect.Effect<
-            Array<EventJournalSqlliteRow>,
-            SqlError.SqlError
-          >;
+              Array<EventJournalSqlliteRow>,
+              SqlError.SqlError
+            >;
 
         return Stream.fromIterable(raw_data).pipe(
           Stream.mapEffect((row) =>
