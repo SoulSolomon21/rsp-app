@@ -39,8 +39,8 @@ export class EventJournalStorage extends Context.Tag('@@EventJournalStorage')<
     read<Events extends ReadonlyArray<Schema.Schema.AnyNoContext>>(
       aggregateRootName: string,
       aggregateId: AggregateId.AggregateId,
-      fromSequence: number,
       eventSchema: Events,
+      fromSequence: number,
     ): Stream.Stream<
       EventJournalStorageEntry<Schema.Schema.Type<Events[number]>>
     >;
@@ -84,8 +84,8 @@ export const inMemory = Effect.gen(function* () {
   const read: EventJournalStorage['Type']['read'] = (
     aggregateRootName,
     aggregateId,
-    fromSequence,
     _,
+    fromSequence,
   ) =>
     pipe(
       Ref.get(state),
@@ -180,8 +180,8 @@ export const sqlLite = (args: EventJournalSqlliteMakeArgs) =>
     const read: EventJournalStorage['Type']['read'] = (
       aggregateRootName,
       aggregateId,
-      _,
       schemas,
+      _,
     ) =>
       Effect.gen(function* () {
         const raw_data =
