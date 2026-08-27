@@ -75,8 +75,37 @@ describe('EventJournalStorage', () => {
 
       const eventJournal = yield* EventJournalStorage.EventJournalStorage
       const journalEventsCount = yield* Stream.runCount(eventJournal.read(ProductAggregate.aggregateRootName, "product-1", 0, [ProductCreated, ProductNameChanged]))
-
+      
       expect(journalEventsCount).toEqual(1)
+      
+      const currentState = yield* ProductEventJournal.read("product-1")
+      expect(Option.isSome(Option.flatten(currentState))).toBe(true)
+      
+      yield* ProductEventJournal.produce("product-1")(({ append, read }) => Effect.gen(function* () {
+        const product = Option.flatten(yield* read)
+        const _headers = MessageHeaders.MessageHeaders.make({
+          messageId: "message-id-2",
+        })
+        
+        const productNameChangedEvent = ProductNameChanged.make({
+          _headers,
+          _aggregateId: "product-1",
+          newName: "Fancy Pizza",
+          oldName: product.pipe(Option.map((_) => _.productName), Option.getOrElse(() => "???"))
+        })
+        
+        yield* append(productNameChangedEvent)
+      }))
+      
+      const journalEventsCount2 = yield* Stream.runCount(eventJournal.read(ProductAggregate.aggregateRootName, "product-1", 0, [ProductCreated, ProductNameChanged]))
+      expect(journalEventsCount2).toEqual(2)
+
+      const newCurrentState = Option.flatten(yield* ProductEventJournal.read("product-1"))
+      expect(Option.isSome(newCurrentState)).toBe(true)
+
+      if (newCurrentState._tag === "Some") {
+        expect(newCurrentState.value.productName).toEqual("Fancy Pizza")
+      }
     }).pipe(
       Effect.provide(
         EventJournalStorage.inMemory
