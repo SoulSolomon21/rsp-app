@@ -48,7 +48,6 @@ const ProductEventJournal = make({
   aggregateRoot: ProductAggregate,
   eventTypes: [ProductNameChanged, ProductDiscontinued],
   state: Schema.Option(Schema.String),
-  initialState: () => Option.none(),
   reduce(state, { event }) {
     switch (event._tag) {
       case "ProductNameChanged":
