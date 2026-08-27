@@ -32,6 +32,7 @@ describe('EventJournalStorage', () => {
           event: new SampleEvent1(),
         }),
       );
+      
       const events = yield* Stream.runCollect(
         journal.read('products', 'product-1', 0, EventUnion),
       );

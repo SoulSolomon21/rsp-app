@@ -57,7 +57,7 @@ export namespace EventSourcedAggregate {
   }
 
   export interface Reducer<State, Event> {
-    (state: Option.Option<State>, event: EventJournalStorage.EventJournalStorageEntry<Event>): Schema.Schema.Type<State>
+    (state: Option.Option<State>, event: EventJournalStorage.EventJournalStorageEntry<Event>): State
   }
 }
 
