@@ -4,7 +4,10 @@ export const AggregateMessageAnnotationTypeId = Symbol.for("@@AggregateMessageAn
 
 export namespace MessageKind {
   // export type All = Schema.Literal<any>
-  export type All = Schema.Literal<["Query", "Command", "Event"]>
+  export type All =
+    | Schema.Literal<["Query"]>
+    | Schema.Literal<["Command"]>
+    | Schema.Literal<["Event"]>
 }
 
 export type AggregateMessageKind = "Query" | "Command" | "Event"
